@@ -84,3 +84,33 @@ class BinaryCrossEntropy(BaseLoss):
             -(y_true / clipped_dvalues - (1 - y_true) / (1 - clipped_dvalues)) / outputs
         )
         self.dinputs = self.dinputs / m
+
+
+class LossMeanSquare(BaseLoss):
+    def forward(self, model_out, y_true):
+        m = model_out.shape[1]
+        loss = (model_out - y_true) ** 2
+        loss = np.mean(loss, axis=0, keepdims=True)
+        assert loss.shape == (1, m)
+        return loss
+
+    def backward(self, dvalues, y_true):
+        m = y_true.shape[1]
+        outputs = dvalues.shape[0]
+        self.dinputs = -2 * (y_true - dvalues) / outputs
+        self.dinputs = self.dinputs / m
+
+
+class LossMeanAbsolute(BaseLoss):
+    def forward(self, model_out, y_true):
+        m = model_out.shape[1]
+        loss = np.abs(model_out - y_true)
+        loss = np.mean(loss, axis=0, keepdims=True)
+        assert loss.shape == (1, m)
+        return loss
+
+    def backward(self, dvalues, y_true):
+        m = y_true.shape[1]
+        outputs = dvalues.shape[0]
+        self.dinputs = np.sign(y_true - dvalues) / outputs
+        self.dinputs = self.dinputs / m

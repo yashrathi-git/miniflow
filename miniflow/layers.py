@@ -13,7 +13,8 @@ class LayerDense(Base):
         bias_regularization_l1=0,
         bias_regularization_l2=0,
     ):
-        self.weights = np.random.randn(n_current, n_previous) * 0.01
+        # 2 / n[l-1] works well with reLU which is most commonly used
+        self.weights = np.random.randn(n_current, n_previous) * np.sqrt(2 / n_previous)
         self.biases = np.zeros((n_current, 1))
         self.weight_regularization_l1 = weight_regularization_l1
         self.weight_regularization_l2 = weight_regularization_l2
