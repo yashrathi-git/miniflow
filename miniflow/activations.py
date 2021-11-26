@@ -51,3 +51,12 @@ class CommonSoftmaxCrossEntropyLoss:
 
         self.dinputs[y_true, range(m)] -= 1
         self.dinputs /= m
+
+
+class ActivationSigmoid(Base):
+    def forward(self, inputs: np.ndarray):
+        self.inputs = inputs
+        self.output = 1 / (1 + np.exp(-inputs))
+
+    def backward(self, dvalues):
+        self.dinputs = dvalues * (1 - self.output) * self.output

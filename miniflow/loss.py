@@ -60,3 +60,27 @@ class CategoricalLossEntropy(BaseLoss):
         self.dinputs = -y_true / dvalues
         # normalize because it will help later in the optimization
         self.dinputs = self.dinputs / m
+
+
+class BinaryCrossEntropy(BaseLoss):
+    def forward(self, model_out, y_true):
+        m = model_out.shape[1]
+        model_out = np.clip(model_out, 1e-7, 1 - 1e-7)
+        loss = -(y_true * np.log(model_out) + (1 - y_true) * np.log(1 - model_out))
+        # averaging the loss per-neuron for given training example
+        loss = np.mean(loss, axis=0, keepdims=True)
+        assert loss.shape == (1, m)
+        return loss
+
+    def backward(self, dvalues, y_true):
+        m = y_true.shape[1]
+        outputs = dvalues.shape[0]
+
+        clipped_dvalues = np.clip(dvalues, 1e-7, 1 - 1e-7)
+
+        # while forward prop we are averaging the loss per neuron for given
+        # training example
+        self.dinputs = (
+            -(y_true / clipped_dvalues - (1 - y_true) / (1 - clipped_dvalues)) / outputs
+        )
+        self.dinputs = self.dinputs / m
