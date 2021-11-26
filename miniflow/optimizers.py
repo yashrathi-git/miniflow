@@ -84,6 +84,6 @@ class AdamOptimizer(BaseOptimizer):
 
         self._update_params(
             layer,
-            dw=(Vdw_corr / np.sqrt(Sdw_corr) + self.epsilon),
-            db=(Vdb_corr / np.sqrt(Sdb_corr) + self.epsilon),
+            dw=(Vdw_corr / (np.sqrt(Sdw_corr) + self.epsilon)),
+            db=(Vdb_corr / (np.sqrt(Sdb_corr) + self.epsilon)),
         )
