@@ -1,6 +1,6 @@
 import numpy as np
 
-from miniflow.core import Base
+from miniflow.common import Base
 from miniflow.loss import CategoricalLossEntropy
 
 
@@ -20,6 +20,11 @@ class ActivationSoftmax(Base):
             )
             self.dinputs[:, idx] = np.dot(dvalues_out, jacobin_matrix)
 
+    @staticmethod
+    def predictions(outputs):
+        # Taking the index of maximum activated neuron - its class
+        return np.argmax(outputs, axis=0)
+
 
 class ActivationReLU(Base):
     def forward(self, inputs):
@@ -30,6 +35,10 @@ class ActivationReLU(Base):
         self.dinputs = dvalues.copy()
         # zero gradient where values were negative
         self.dinputs[self.inputs <= 0] = 0
+
+    @staticmethod
+    def predictions(outputs):
+        return outputs
 
 
 class CommonSoftmaxCrossEntropyLoss:
@@ -61,6 +70,10 @@ class ActivationSigmoid(Base):
     def backward(self, dvalues):
         self.dinputs = dvalues * (1 - self.output) * self.output
 
+    @staticmethod
+    def predictions(outputs):
+        return np.round(outputs)
+
 
 class ActivationLinear(Base):
     def forward(self, inputs):
@@ -69,3 +82,7 @@ class ActivationLinear(Base):
 
     def backward(self, dvalues):
         self.dinputs = dvalues.copy()
+
+    @staticmethod
+    def predictions(outputs):
+        return outputs

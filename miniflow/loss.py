@@ -5,33 +5,37 @@ from miniflow.layers import LayerDense
 
 
 class BaseLoss(ABC):
+    def __init__(self):
+        self.trainable_layers = None
+
     def calculate(self, model_out, y):
         losses = self.forward(model_out, y)
         mean_loss = np.mean(losses, axis=1)
-        return np.squeeze(mean_loss)
+        return np.squeeze(mean_loss), self.regularisation_loss()
 
     @abstractmethod
     def forward(self, model_out, y_true):
         pass
 
-    def regularisation_loss(self, layer: LayerDense):
+    def regularisation_loss(self):
         regularisation_loss = 0
-        if layer.weight_regularization_l1:
-            regularisation_loss += layer.weight_regularization_l1 * np.sum(
-                np.abs(layer.weights)
-            )
-        if layer.weight_regularization_l2:
-            regularisation_loss += layer.weight_regularization_l2 * np.sum(
-                layer.weights ** 2
-            )
-        if layer.bias_regularization_l1:
-            regularisation_loss += layer.bias_regularization_l1 * np.sum(
-                np.abs(layer.biases)
-            )
-        if layer.bias_regularization_l2:
-            regularisation_loss += layer.bias_regularization_l2 * np.sum(
-                layer.biases ** 2
-            )
+        for layer in self.trainable_layers:
+            if layer.weight_regularization_l1:
+                regularisation_loss += layer.weight_regularization_l1 * np.sum(
+                    np.abs(layer.weights)
+                )
+            if layer.weight_regularization_l2:
+                regularisation_loss += layer.weight_regularization_l2 * np.sum(
+                    layer.weights ** 2
+                )
+            if layer.bias_regularization_l1:
+                regularisation_loss += layer.bias_regularization_l1 * np.sum(
+                    np.abs(layer.biases)
+                )
+            if layer.bias_regularization_l2:
+                regularisation_loss += layer.bias_regularization_l2 * np.sum(
+                    layer.biases ** 2
+                )
         return regularisation_loss
 
 

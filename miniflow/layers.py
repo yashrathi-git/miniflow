@@ -1,6 +1,6 @@
 import numpy as np
 
-from miniflow.core import Base
+from miniflow.common import Base
 
 
 class LayerDense(Base):
@@ -56,3 +56,8 @@ class LayerDropout(Base):
 
     def backward(self, dvalues):
         self.dinputs = dvalues * self.binary_mask
+
+
+class LayerInput(Base):
+    def forward(self, inputs):
+        self.output = inputs
