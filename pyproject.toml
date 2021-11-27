@@ -9,6 +9,7 @@ python = ">=3.7,<3.11"
 numpy = "^1.21.4"
 nnfs = "^0.5.1"
 matplotlib = "^3.5.0"
+rich = "^10.14.0"  # For terminal progress bar also compatible with ipython notebooks
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

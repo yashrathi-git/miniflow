@@ -47,15 +47,18 @@ class LayerDropout(Base):
     def __init__(self, dropout_rate):
         self.success_rate = 1 - dropout_rate
 
-    def forward(self, inputs):
+    def forward(self, inputs, training):
         self.inputs = inputs
+        if not training:
+            self.output = inputs.copy()
+            return
         self.binary_mask = (
             np.random.binomial(1, self.success_rate, inputs.shape) / self.success_rate
         )
         self.output = inputs * self.binary_mask
 
     def backward(self, dvalues):
-        self.dinputs = dvalues * self.binary_mask
+        self.dinputs = dvalues * self.binary_mask / self.success_rate
 
 
 class LayerInput(Base):

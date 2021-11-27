@@ -28,3 +28,15 @@ class AccuracyRegression(BaseAccuracy):
 
     def compare(self, y_pred, y_true):
         return np.absolute(y_pred - y_true) < self.precision
+
+
+class AccuracyCategorical(BaseAccuracy):
+    def compare(self, y_pred, y_true):
+        if len(y_true.shape) == 2:
+            y_true = np.argmax(y_true, axis=0)
+        assert len(y_pred.shape) == 1
+        assert len(y_true.shape) == 1
+        return y_pred == y_true
+
+    def init(self, y, reinit=False):
+        pass

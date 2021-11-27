@@ -1,7 +1,6 @@
 import numpy as np
 
 from miniflow.common import Base
-from miniflow.loss import CategoricalLossEntropy
 
 
 class ActivationSoftmax(Base):
@@ -39,27 +38,6 @@ class ActivationReLU(Base):
     @staticmethod
     def predictions(outputs):
         return outputs
-
-
-class CommonSoftmaxCrossEntropyLoss:
-    def __init__(self):
-        self.activation = ActivationSoftmax()
-        self.loss = CategoricalLossEntropy()
-
-    def forward(self, inputs, y_true):
-        self.activation.forward(inputs)
-        self.output = self.activation.output
-        return self.loss.calculate(self.output, y_true)
-
-    def backward(self, dvalues, y_true):
-        m = dvalues.shape[1]
-        if len(y_true.shape) == 2:
-            # we just need to correct class indexes
-            y_true = np.argmax(y_true, axis=0)
-        self.dinputs = dvalues.copy()
-
-        self.dinputs[y_true, range(m)] -= 1
-        self.dinputs /= m
 
 
 class ActivationSigmoid(Base):

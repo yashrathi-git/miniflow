@@ -1,17 +1,20 @@
-import numpy as np
 from abc import ABC, abstractmethod
 
-from miniflow.layers import LayerDense
+import numpy as np
+
+from miniflow.activations import ActivationSoftmax
 
 
 class BaseLoss(ABC):
     def __init__(self):
         self.trainable_layers = None
 
-    def calculate(self, model_out, y):
+    def calculate(self, model_out, y, *, include_regularization=True):
         losses = self.forward(model_out, y)
-        mean_loss = np.mean(losses, axis=1)
-        return np.squeeze(mean_loss), self.regularisation_loss()
+        mean_loss = np.mean(losses)
+        if not include_regularization:
+            return mean_loss
+        return mean_loss, self.regularisation_loss()
 
     @abstractmethod
     def forward(self, model_out, y_true):
@@ -118,3 +121,24 @@ class LossMeanAbsolute(BaseLoss):
         outputs = dvalues.shape[0]
         self.dinputs = np.sign(y_true - dvalues) / outputs
         self.dinputs = self.dinputs / m
+
+
+class CommonSoftmaxCrossEntropyLoss:
+    def __init__(self):
+        self.activation = ActivationSoftmax()
+        self.loss = CategoricalLossEntropy()
+
+    def forward(self, inputs, y_true):
+        self.activation.forward(inputs)
+        self.output = self.activation.output
+        return self.loss.calculate(self.output, y_true)
+
+    def backward(self, dvalues, y_true):
+        m = dvalues.shape[1]
+        if len(y_true.shape) == 2:
+            # we just need to correct class indexes
+            y_true = np.argmax(y_true, axis=0)
+        self.dinputs = dvalues.copy()
+
+        self.dinputs[y_true, range(m)] -= 1
+        self.dinputs /= m
