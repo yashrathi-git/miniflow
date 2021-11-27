@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "NN_from_scratch"
+name = "miniflow"
 version = "0.1.0"
 description = ""
 authors = ["Yash Rathi <yashrathicricket@gmail.com>"]
