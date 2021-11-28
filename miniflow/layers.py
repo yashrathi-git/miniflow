@@ -42,6 +42,13 @@ class LayerDense(Base):
             self.dbias += 2 * self.bias_regularization_l2 * self.biases
         self.dinputs = np.dot(self.weights.T, dvalues)
 
+    def get_parameters(self):
+        return self.weights, self.biases
+
+    def set_parameters(self, weights, biases):
+        self.weights = weights
+        self.biases = biases
+
 
 class LayerDropout(Base):
     def __init__(self, dropout_rate):

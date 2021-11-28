@@ -1,3 +1,8 @@
+import contextlib
+import copy
+import pickle
+from contextlib import ExitStack
+
 from rich.console import Console
 from rich.progress import (BarColumn, Progress, ProgressColumn, Task,
                            TimeRemainingColumn)
@@ -151,3 +156,41 @@ class Model:
                 params.append(training)
             layer.forward(*params)
         return layer.output
+
+    def get_parameters(self):
+        params = []
+        for layer in self.trainable_layers:
+            params.append(layer.get_parameters())
+
+        return params
+
+    def set_parameters(self, params):
+        for layer, layer_params in zip(self.trainable_layers, params):
+            layer.set_parameters(*layer_params)
+
+    def save_params(self, fp):
+        with open(fp, "wb") as f:
+            pickle.dump(self.get_parameters(), f)
+
+    def load_params(self, fp):
+        with open(fp, "rb") as f:
+            self.set_parameters(pickle.load(f))
+
+    def save(self, fp):
+        model = copy.deepcopy(self)
+        # Reset accumulated values in loss and accuracy
+        model.inp_layer.__dict__.pop("output", None)
+        model.loss.__dict__.pop("dinputs", None)
+
+        for layer in model.layers:
+            for prop in ("inputs", "output", "dinputs", "dweights", "dbiases"):
+                layer.__dict__.pop(prop, None)
+
+        with open(fp, "wb") as f:
+            pickle.dump(model, f)
+
+    @staticmethod
+    def load(fp):
+        with open(fp, "rb") as f:
+            model = pickle.load(f)
+        return model
