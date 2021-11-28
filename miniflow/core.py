@@ -1,11 +1,35 @@
 from rich.console import Console
-from rich.progress import track
+from rich.progress import (BarColumn, Progress, ProgressColumn, Task,
+                           TimeRemainingColumn)
+from rich.text import Text
 
 from miniflow.activations import ActivationSoftmax
 from miniflow.layers import LayerDropout, LayerInput
 from miniflow.loss import CategoricalLossEntropy, CommonSoftmaxCrossEntropyLoss
 
 console = Console()
+
+
+class EpochSpeedColumn(ProgressColumn):
+    """Renders human readable epoch speed."""
+
+    def render(self, task: Task) -> Text:
+        """Show epoch speed."""
+        speed = task.finished_speed or task.speed
+        if speed is None:
+            return Text("?", style="progress.data.speed")
+        epoch_speed = f"{speed:.2f} Epochs/s"
+        return Text(epoch_speed, style="progress.data.speed")
+
+
+@contextlib.contextmanager
+def handle_keyboard_interrupt():
+    """Handle keyboard interrupt."""
+    try:
+        yield
+    except KeyboardInterrupt:
+        console.print("[red]Exiting...")
+        exit(1)
 
 
 class Model:
@@ -27,34 +51,49 @@ class Model:
         self.optimizer = optimizer
         self.accuracy = accuracy
 
-    def train(self, X, Y, *, epochs=1, print_every=1, validation_data=None):
+    def train(
+        self, X, Y, *, epochs=1, print_every=1, validation_data=None, progress_bar=True
+    ):
+        progress = Progress(
+            "[progress.description]{task.description}",
+            "[green]Epoch [purple]{task.completed}/{task.total}",
+            BarColumn(),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            TimeRemainingColumn(),
+            EpochSpeedColumn(),
+            console=console,
+        )
         self.accuracy.init(Y)
-        for epoch in track(
-            range(epochs + 1), total=epochs, description="Training...", console=console
-        ):
-            output = self.forward(X, training=True)
-            data_loss, reg_loss = self.loss.calculate(output, Y)
-            total_loss = data_loss + reg_loss
-            prediction = self.output_activation.predictions(output)
-            accuracy = self.accuracy.calculate(prediction, Y)
-            self.backward(output, Y)
+        # Don't display progress bar if there progress_bar is False
+        with ExitStack() as stack:
+            if progress_bar:
+                progress = stack.enter_context(progress)
+            stack.enter_context(handle_keyboard_interrupt())
+            for epoch in progress.track(
+                range(epochs + 1), total=epochs, description="Training"
+            ):
+                output = self.forward(X, training=True)
+                data_loss, reg_loss = self.loss.calculate(output, Y)
+                total_loss = data_loss + reg_loss
+                prediction = self.output_activation.predictions(output)
+                accuracy = self.accuracy.calculate(prediction, Y)
+                self.backward(output, Y)
 
-            # Optimize
-            self.optimizer.pre_update_model()
-            for layer in self.trainable_layers:
-                self.optimizer.update_params(layer)
-            self.optimizer.post_update_model()
-
-            if epoch % print_every == 0:
-                console.print(
-                    f"[green]Epoch[/]: {epoch}/{epochs}, "
-                    f"[green]Accuracy[/]: {accuracy:.2f}, "
-                    f"[green]Loss[/]: {total_loss:.4f} ("
-                    f"[green]Data Loss[/]: {data_loss:.4f}, "
-                    f"[green]Reg Loss[/]: {reg_loss:.4f}), "
-                    f"[green]Learning Rate[/]: {self.optimizer.current_learning_rate:.4f}",
-                    highlight=False,
-                )
+                # Optimize
+                self.optimizer.pre_update_model()
+                for layer in self.trainable_layers:
+                    self.optimizer.update_params(layer)
+                self.optimizer.post_update_model()
+                if epoch % print_every == 0:
+                    progress.console.print(
+                        f"[green]Epoch[/]: {epoch}/{epochs}, "
+                        f"[green]Accuracy[/]: {accuracy:.2f}, "
+                        f"[green]Loss[/]: {total_loss:.4f} ("
+                        f"[green]Data Loss[/]: {data_loss:.4f}, "
+                        f"[green]Reg Loss[/]: {reg_loss:.4f}), "
+                        f"[green]Learning Rate[/]: {self.optimizer.current_learning_rate:.4f}",
+                        highlight=False,
+                    )
         if validation_data:
             self.validation_data(*validation_data)
 
